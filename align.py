@@ -52,19 +52,32 @@ def align(seq1, seq2, matrix):
 
     array = [[0 for i in range(a + 1)] for j in range(b + 1)]
 
+    # build matrix
+    # array is of size [a+1][b+1] to include score for comparison of gap character '-'
+
     for i in range (0, a + 1):
         array[i][0] = i * gap_penalty
     for j in range (0, b + 1):
         array[0][j] = j * gap_penalty
+
     for i in range(1, a + 1):
         for j in range(1, b + 1):
+
+            # score for a match is added to the previous diagonal score
             match = array[i-1][j-1] + matrix[seq1[i] + seq2[j]]
+
             delete = array[i-1][j] + gap_penalty
             insert = array[i][j-1] + gap_penalty
+
+            # score in this cell is the max of the three
             array[i][j] = max(match, delete, insert)
 
     aligned_a = ""
     aligned_b = ""
+
+    # trace back to find optimal alignment of sequences
+
+    score = array[a][b]
 
     while a > 0 or b > 0:
         if a > 0 and b > 0 and array[a][b] == array[a-1][b-1] + matrix[seq1[a] + seq2[b]]:
@@ -72,13 +85,17 @@ def align(seq1, seq2, matrix):
             aligned_b += seq2[b]
             a += -1
             b += -1
+            score += array[a-1][b-1]
         if a > 0 and array[a][b] == array[a-1][b] + gap_penalty:
             aligned_a += seq1[a]
             aligned_b += "-"
+            score += array[a-1][b]
         if b > 0 and array[a][b] == array[a][b-1] + gap_penalty:
             aligned_a += "-"
             aligned_b += seq2[b]
+            score += array[a][b-1]
 
+    print "The optimal alignment between given sequences has score: " + score
     print aligned_a + "\n", aligned_b
 
 align(seqA, seqB, lookup_table)
