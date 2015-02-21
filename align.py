@@ -43,31 +43,32 @@ seqA = parsefile(fp1)
 seqB = parsefile(fp2)
 lookup_table = parse_matrix(fp3)
 
-print "seqA " + seqA + "\n", "seqB " + seqB + "\n", lookup_table
+#print "seqA " + seqA + "\n", "seqB " + seqB + "\n", lookup_table
 
 
 def align(seq1, seq2, matrix):
     a = len(seq1)
     b = len(seq2)
 
-    array = [[0 for i in range(a + 1)] for j in range(b + 1)]
+    array = [[0 for i in range(b + 1)] for j in range(a + 1)]
+
+    array[0][0] = 0
 
     # build matrix
     # array is of size [a+1][b+1] to include score for comparison of gap character '-'
 
-    for i in range (0, a + 1):
-        array[i][0] = i * gap_penalty
-    for j in range (0, b + 1):
-        array[0][j] = j * gap_penalty
+    for i in range(1, a + 1):
+        array[i][0] = array[i-1][0] + int(gap_penalty)
+    for j in range(1, b + 1):
+        array[0][j] = array[0][j-1] + int(gap_penalty)
 
     for i in range(1, a + 1):
         for j in range(1, b + 1):
 
             # score for a match is added to the previous diagonal score
-            match = array[i-1][j-1] + matrix[seq1[i] + seq2[j]]
-
-            delete = array[i-1][j] + gap_penalty
-            insert = array[i][j-1] + gap_penalty
+            match = int(array[i-1][j-1]) + int(matrix[seq1[i-1] + seq2[j-1]])
+            delete = int(array[i-1][j]) + int(gap_penalty)
+            insert = int(array[i][j-1]) + int(gap_penalty)
 
             # score in this cell is the max of the three
             array[i][j] = max(match, delete, insert)
@@ -77,25 +78,24 @@ def align(seq1, seq2, matrix):
 
     # trace back to find optimal alignment of sequences
 
-    score = array[a][b]
 
     while a > 0 or b > 0:
-        if a > 0 and b > 0 and array[a][b] == array[a-1][b-1] + matrix[seq1[a] + seq2[b]]:
-            aligned_a += seq1[a]
-            aligned_b += seq2[b]
-            a += -1
-            b += -1
-            score += array[a-1][b-1]
-        if a > 0 and array[a][b] == array[a-1][b] + gap_penalty:
-            aligned_a += seq1[a]
+        if a > 0 and b > 0 and array[a][b] == int(array[a-1][b-1]) + int(matrix[seq1[a-1] + seq2[b-1]]):
+            aligned_a += seq1[a-1]
+            aligned_b += seq2[b-1]
+            a -= 1
+            b -= 1
+        if a > 0 and array[a][b] == int(array[a-1][b]) + int(gap_penalty):
+            aligned_a += seq1[a-1]
             aligned_b += "-"
-            score += array[a-1][b]
-        if b > 0 and array[a][b] == array[a][b-1] + gap_penalty:
+            a -= 1
+        if b > 0 and array[a][b] == int(array[a][b-1]) + int(gap_penalty):
             aligned_a += "-"
-            aligned_b += seq2[b]
-            score += array[a][b-1]
+            aligned_b += seq2[b-1]
+            b -= 1
 
-    print "The optimal alignment between given sequences has score: " + score
-    print aligned_a + "\n", aligned_b
+    f = open('output.txt', 'w')
+    print >> f, "The optimal alignment between given sequences has score " + str(array[a-1][b-1]) + "\n", aligned_a[::-1] + "\n", aligned_b[::-1]
+    f.close()
 
 align(seqA, seqB, lookup_table)
